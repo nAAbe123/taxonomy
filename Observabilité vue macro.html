@@ -1,0 +1,336 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Observabilité CA-GIP — vue macro</title>
+<style>
+  :root{
+    --ink:#1c2b3a; --ink2:#55657a; --ink3:#8995a3; --line:#e6eaee;
+    --bg:#f4f6f8; --card:#ffffff;
+    --green:#1f8a70; --green-l:#f5fbf8;
+    --amber:#b8722a; --amber-l:#fffaf0;
+    --blue:#2f6f9f; --violet:#7b3fa0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--ink);padding:26px 20px 38px}
+  .wrap{max-width:1400px;margin:0 auto}
+
+  .head{background:#1c2b3a;color:#fff;border-radius:10px;padding:14px 20px;
+        display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+  .head .t{font-size:18px;font-weight:700}
+  .head .s{font-size:11.5px;opacity:.74;line-height:1.5}
+
+  /* ---------- bandes entrée / sortie ---------- */
+  .zone{background:var(--card);border-radius:9px;padding:13px 15px;box-shadow:0 1px 3px rgba(28,43,58,.13)}
+  .zone.in{border-top:3px solid var(--blue)}
+  .zone.out{border-top:3px solid var(--violet)}
+  .zt{display:flex;align-items:baseline;gap:11px;flex-wrap:wrap;margin-bottom:11px}
+  .kick{font-size:9.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink3)}
+  .zt b{font-size:15px}
+  .zt .note{font-size:11.5px;color:var(--ink2)}
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+  .tile{background:#fbfcfd;border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .tile .ti{font-size:12.5px;font-weight:700;margin-bottom:3px}
+  .tile .tx{font-size:11px;color:var(--ink2);line-height:1.45}
+  .tile .tx i{font-style:normal;color:var(--amber)}
+  .zone.out .tile{border-left:3px solid var(--violet)}
+  .zone.in .tile{border-left:3px solid var(--blue)}
+
+  .flow{display:flex;align-items:center;justify-content:center;gap:9px;padding:9px 0;
+        font-size:11.5px;font-weight:600;letter-spacing:.4px;color:var(--blue)}
+  .flow.down{color:var(--violet)}
+  .flow i{font-style:normal;font-size:16px;line-height:1}
+
+  /* ---------- pavé central ---------- */
+  .core{position:relative;border:2.5px solid var(--green);border-radius:14px;background:#fff;
+        padding:18px 16px 16px;box-shadow:0 2px 14px rgba(31,138,112,.09)}
+  .core-tag{position:absolute;top:-11px;left:18px;background:var(--green);color:#fff;font-size:10px;
+            font-weight:700;letter-spacing:1.2px;text-transform:uppercase;padding:4px 11px;border-radius:20px}
+  .core-grid{display:grid;grid-template-columns:1fr 250px;gap:13px}
+  .layers{display:flex;flex-direction:column;gap:9px}
+
+  /* ---------- bande de couche (visuel d'origine) ---------- */
+  .band{display:grid;grid-template-columns:132px 190px 1fr 1fr;background:#fff;border-radius:9px;
+        overflow:hidden;box-shadow:0 1px 3px rgba(28,43,58,.13);min-height:92px}
+  .lay{color:#fff;padding:11px 12px;display:flex;flex-direction:column;justify-content:center;gap:3px}
+  .lay .num{font-size:10px;font-weight:700;opacity:.72;letter-spacing:1px}
+  .lay .nm{font-size:13.5px;font-weight:700;line-height:1.25}
+  .lay .sub{font-size:10.5px;opacity:.78;line-height:1.3}
+  .l1{background:#7b3fa0} .l2{background:#8e4a86} .l3{background:#2f6f9f}
+  .l4{background:#2b7f96} .l5{background:#1f8a70} .l6{background:#3f6b3a}
+  .tx{background:#4a4f63}
+  .tool{background:#fbfcfd;border-right:1px solid var(--line);padding:11px 13px;
+        display:flex;flex-direction:column;justify-content:center;gap:5px}
+  .tool .badge{font-size:8.5px;font-weight:700;letter-spacing:.9px;color:var(--ink3);text-transform:uppercase}
+  .tool .nm{font-size:15px;font-weight:700;line-height:1.2}
+  .tool .role{font-size:11px;color:var(--ink2);line-height:1.35}
+  .tool .out{font-size:10px;color:#99a3ae;line-height:1.3}
+  .tool .out s{color:#b3bcc6}
+  .col{padding:10px 13px;display:flex;flex-direction:column;gap:4px}
+  .col.fait{background:var(--green-l);border-right:1px solid var(--line)}
+  .col.todo{background:var(--amber-l)}
+  .col h3{font-size:9.5px;letter-spacing:1.1px;text-transform:uppercase;margin-bottom:3px}
+  .col.fait h3{color:var(--green)}
+  .col.todo h3{color:var(--amber)}
+  .li{font-size:11.5px;line-height:1.4;padding-left:15px;position:relative;color:#37475a}
+  .col.fait .li::before{content:"▪";position:absolute;left:2px;top:-1px;color:var(--green);font-size:12px}
+  .col.todo .li::before{content:"▫";position:absolute;left:2px;top:-1px;color:#d79b1e;font-size:12px}
+
+  /* ---------- colonne logs transverse (rendu v5) ---------- */
+  .logs{background:linear-gradient(180deg,#fffaf0,#fdf1dd);border:2px dashed #d79b1e;border-radius:10px;
+        padding:14px;display:flex;flex-direction:column;gap:9px;position:sticky;top:16px;align-self:start}
+  .logs .lk{font-size:9.5px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--amber)}
+  .logs .lt{font-size:17px;font-weight:700;line-height:1.2}
+  .logs .ltool{font-size:11px;color:var(--ink2);line-height:1.5}
+  .logs .arrows{display:flex;flex-direction:column;gap:5px;font-size:10.5px;color:#8a6a2f;
+                border-top:1px dashed #dcb463;border-bottom:1px dashed #dcb463;padding:9px 0}
+  .logs .marche{font-size:10.5px;color:var(--ink2);line-height:1.6}
+  .logs .marche i{font-style:normal;color:var(--amber)}
+
+  /* ---------- pied ---------- */
+  .legend{margin-top:16px;background:#fff;border-radius:9px;padding:12px 15px;font-size:11.5px;
+          color:var(--ink2);line-height:1.8;box-shadow:0 1px 3px rgba(28,43,58,.13)}
+  .legend b{color:var(--ink)}
+  .key{display:inline-flex;align-items:center;gap:5px;margin-right:18px}
+  .sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+
+  @media(max-width:1180px){
+    .core-grid{grid-template-columns:1fr}
+    .logs{position:static}
+    .tiles{grid-template-columns:repeat(2,1fr)}
+    .band{grid-template-columns:120px 170px 1fr 1fr}
+  }
+  @media(max-width:860px){
+    .band{grid-template-columns:1fr}
+    .tool{border-right:none;border-bottom:1px solid var(--line)}
+    .col.fait{border-right:none;border-bottom:1px solid var(--line)}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="head">
+    <div class="t">Observabilité CA-GIP — vue macro</div>
+    <div class="s">Une entrée unique de collecte, un socle observé d'un seul tenant, des sorties de valorisation. Lecture : la couche observée, l'outil qui la porte, ce qu'il fait aujourd'hui, ce qu'il reste à faire.</div>
+  </div>
+
+  <!-- ====================== ENTRÉE ====================== -->
+  <div class="zone in">
+    <div class="zt">
+      <span class="kick">Entrée</span><b>Collecte transverse</b>
+      <span class="note">Un plan de collecte unique au-dessus de toutes les couches — condition du fleet management et de la normalisation</span>
+    </div>
+    <div class="tiles">
+      <div class="tile"><div class="ti">OpenTelemetry</div><div class="tx">Collecteur agnostique du backend : on instrumente une fois, sans dépendre d'un éditeur.</div></div>
+      <div class="tile"><div class="ti">Fleet management</div><div class="tx">Pilotage centralisé du parc d'agents, configuration versionnée et identique pour tous. <i>À faire : fleet manager OpAMP.</i></div></div>
+      <div class="tile"><div class="ti">Normalisation</div><div class="tx">Conventions de nommage et enrichissement appliqués une seule fois, à l'entrée.</div></div>
+      <div class="tile"><div class="ti">Routage</div><div class="tx">Découplage collecte / stockage : un signal, plusieurs destinations possibles. <i>À faire : routage OTLP vers les backends.</i></div></div>
+    </div>
+  </div>
+
+  <div class="flow"><i>↓</i> signaux normalisés, destination découplée <i>↓</i></div>
+
+  <!-- ====================== SOCLE ====================== -->
+  <div class="core">
+    <div class="core-tag">Socle observé — un tout</div>
+    <div class="core-grid">
+
+      <div class="layers">
+
+        <div class="band">
+          <div class="lay l1">
+            <div class="num">COUCHE 1</div>
+            <div class="nm">Utilisateur</div>
+            <div class="sub">Navigateur, ressenti perçu</div>
+          </div>
+          <div class="tool">
+            <div class="badge">Outil cible</div>
+            <div class="nm">Dynatrace</div>
+            <div class="role">Sondes synthétiques et capture des sessions réelles</div>
+          </div>
+          <div class="col fait">
+            <h3>Fait</h3>
+            <div class="li">Savoir qu'une application est inaccessible avant que l'utilisateur n'appelle le support</div>
+            <div class="li">Mesurer le temps d'affichage d'un écran tel que vu par l'utilisateur</div>
+            <div class="li">Rejouer la session d'un utilisateur qui a rencontré une erreur à l'écran</div>
+          </div>
+          <div class="col todo">
+            <h3>À faire</h3>
+            <div class="li">Instrumentation des parcours métier</div>
+            <div class="li">Déploiement du synthetic sur les SMC</div>
+          </div>
+        </div>
+
+        <div class="band">
+          <div class="lay l2">
+            <div class="num">COUCHE 2</div>
+            <div class="nm">Application</div>
+            <div class="sub">Code, services, transactions</div>
+          </div>
+          <div class="tool">
+            <div class="badge">Outil cible</div>
+            <div class="nm">Dynatrace</div>
+            <div class="role">APM et traces distribuées sur les applications</div>
+          </div>
+          <div class="col fait">
+            <h3>Fait</h3>
+            <div class="li">Identifier la requête SQL qui ralentit une transaction métier</div>
+            <div class="li">Remonter la ligne de code à l'origine d'une erreur en production</div>
+            <div class="li">Voir quel service appelle quel service lors d'une dégradation</div>
+          </div>
+          <div class="col todo">
+            <h3>À faire</h3>
+            <div class="li">Traces Mainframe</div>
+            <div class="li">Ingestion des spans OpenTelemetry</div>
+          </div>
+        </div>
+
+        <div class="band">
+          <div class="lay l3">
+            <div class="num">COUCHE 3</div>
+            <div class="nm">Middleware et données</div>
+            <div class="sub">Serveurs d'application, SGBD, stockage</div>
+          </div>
+          <div class="tool">
+            <div class="badge">Outil cible</div>
+            <div class="nm">Dynatrace</div>
+            <div class="role">Extensions techniques sur les composants d'exécution</div>
+            <div class="out">En sortie : <s>Patrol</s> <s>BEM</s> <s>KLO</s></div>
+          </div>
+          <div class="col fait">
+            <h3>Fait</h3>
+            <div class="li">Détecter la saturation d'un pool de connexions avant le rejet des requêtes</div>
+            <div class="li">Suivre l'empilement des messages dans une file d'attente</div>
+            <div class="li">Alerter sur le remplissage d'un espace de stockage de base de données</div>
+          </div>
+          <div class="col todo">
+            <h3>À faire</h3>
+            <div class="li">Extensions bases de données et stockage</div>
+            <div class="li">Reprise des métriques des outils décommissionnés</div>
+          </div>
+        </div>
+
+        <div class="band">
+          <div class="lay l4">
+            <div class="num">COUCHE 4</div>
+            <div class="nm">Conteneur</div>
+            <div class="sub">Kubernetes, OpenShift</div>
+          </div>
+          <div class="tool">
+            <div class="badge">Outil cible</div>
+            <div class="nm">Prometheus et Dynatrace</div>
+            <div class="role">Métriques natives des clusters par Prometheus, observation des charges par Dynatrace</div>
+          </div>
+          <div class="col fait">
+            <h3>Fait</h3>
+            <div class="li">Détecter un conteneur qui redémarre en boucle</div>
+            <div class="li">Suivre la consommation d'une application conteneurisée au regard de ses quotas</div>
+            <div class="li">Alerter sur un nœud de cluster sous pression mémoire ou disque</div>
+          </div>
+          <div class="col todo">
+            <h3>À faire</h3>
+            <div class="li">Centralisation des métriques des clusters</div>
+            <div class="li">Périmètres respectifs de Prometheus et de Dynatrace</div>
+            <div class="li">Supervision OpenShift</div>
+          </div>
+        </div>
+
+        <div class="band">
+          <div class="lay l5">
+            <div class="num">COUCHE 5</div>
+            <div class="nm">OS et VM</div>
+            <div class="sub">Systèmes, processus, ressources</div>
+          </div>
+          <div class="tool">
+            <div class="badge">Outil cible</div>
+            <div class="nm">Dynatrace et Zabbix</div>
+            <div class="role">Supervision full-stack Dynatrace, supervision système Zabbix</div>
+          </div>
+          <div class="col fait">
+            <h3>Fait</h3>
+            <div class="li">Alerter sur un système de fichiers proche de la saturation</div>
+            <div class="li">Détecter l'arrêt d'un service ou d'un processus attendu</div>
+            <div class="li">Suivre la charge et la mémoire d'un serveur dans le temps, environ 80 % du parc</div>
+          </div>
+          <div class="col todo">
+            <h3>À faire</h3>
+            <div class="li">Périmètres respectifs de Dynatrace et de Zabbix</div>
+            <div class="li">Décommissionnement des supervisions héritées</div>
+          </div>
+        </div>
+
+        <div class="band">
+          <div class="lay l6">
+            <div class="num">COUCHE 6</div>
+            <div class="nm">Hardware et réseau</div>
+            <div class="sub">Réseaux, datacenters, disques</div>
+          </div>
+          <div class="tool">
+            <div class="badge">Outil cible</div>
+            <div class="nm">Zabbix</div>
+            <div class="role">Supervision des équipements et des traps</div>
+            <div class="out">En sortie : <s>Centreon</s> <s>Sensu</s> <s>Liora</s></div>
+          </div>
+          <div class="col fait">
+            <h3>Fait</h3>
+            <div class="li">Détecter la panne d'une alimentation ou d'un disque dans un châssis</div>
+            <div class="li">Alerter sur un lien réseau coupé ou un port saturé</div>
+            <div class="li">Transformer un trap d'équipement en événement exploitable</div>
+          </div>
+          <div class="col todo">
+            <h3>À faire</h3>
+            <div class="li">Migration Icinga vers Zabbix dans R2DC</div>
+            <div class="li">Analyse des flux réseau</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- colonne transverse -->
+      <div class="logs">
+        <div class="lk">Transverse aux 6 couches</div>
+        <div class="lt">Logs</div>
+        <div class="ltool">Elastic — Logs as a Service packagé, exploration Kibana. En sortie : ELISA, un cluster par équipe.</div>
+        <div class="arrows">
+          <span>← journaux utilisateur</span>
+          <span>← journaux applicatifs</span>
+          <span>← journaux middleware et SGBD</span>
+          <span>← journaux conteneurs</span>
+          <span>← journaux système</span>
+          <span>← journaux équipements et traps</span>
+        </div>
+        <div class="marche">Les logs font leur marché à tous les niveaux : ils ne constituent pas une couche, ils traversent le socle de bout en bout. <i>À faire : sortie du modèle ELISA · absorption de la croissance des volumes.</i></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="flow down"><i>↓</i> signaux, événements et inventaire exploitables <i>↓</i></div>
+
+  <!-- ====================== SORTIES ====================== -->
+  <div class="zone out">
+    <div class="zt">
+      <span class="kick">Sorties</span><b>Valorisation et consommation</b>
+      <span class="note">Ce que l'on fait de la donnée observée : accès self-service d'un côté, chaîne événementielle de l'autre</span>
+    </div>
+    <div class="tiles">
+      <div class="tile"><div class="ti">Portail Observabilité</div><div class="tx">Point d'entrée unique : commander un service, consulter un tableau de bord, récupérer un inventaire par API. <i>À faire : services as-code.</i></div></div>
+      <div class="tile"><div class="ti">Événements et corrélation</div><div class="tx">Regrouper les alertes d'un même incident, écarter les doublons, enrichir avec l'application et son propriétaire. <i>À faire : modèle de corrélation, maîtrise de la PRCA.</i></div></div>
+      <div class="tile"><div class="ti">Auto-remédiation</div><div class="tx">Relancer un service arrêté, étendre un disque saturé, escalader quand l'automatisation échoue. <i>À faire : playbooks tenus par les équipes.</i></div></div>
+      <div class="tile"><div class="ti">Temps long et pilotage</div><div class="tx">Historique, corrélation différée, anticipation des capacités et décision humaine en astreinte.</div></div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <b>Lecture</b>
+    <span class="key"><span class="sw" style="background:#1f8a70"></span>Fait : service rendu aujourd'hui</span>
+    <span class="key"><span class="sw" style="background:#d79b1e"></span>À faire : identifié, non rendu à ce jour</span>
+    <br>
+    <b>Principe</b> — une couche, un outil cible. Là où deux outils figurent sur la même couche, la cible reste à définir. La collecte en entrée et la valorisation en sortie sont communes à l'ensemble du socle : c'est ce qui rend le pavé central indissociable.
+  </div>
+
+</div>
+</body>
+</html>
